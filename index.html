@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bingo Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1em;
+      background: #f9f9f9;
+    }
+    #login, #admin-panel { display: none; }
+    .visible { display: block; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5em;
+      margin-top: 1em;
+    }
+    .cell {
+      background: white;
+      border: 2px solid #333;
+      padding: 1em;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    input, button {
+      padding: 0.5em;
+      margin-right: 0.5em;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Form -->
+  <div id="login" class="visible">
+    <h2>Admin Login</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p id="login-error" style="color: red;"></p>
+  </div>
+
+  <!-- Admin Panel -->
+  <div id="admin-panel">
+    <h2>Admin Controls</h2>
+
+    <!-- Board ID Input -->
+    <form onsubmit="loadBoard(); return false;">
+      <input type="text" id="board-id" placeholder="Board ID" />
+      <button type="submit">Load Board</button>
+    </form>
+
+    <!-- Bingo Board -->
+    <div class="board" id="board">
+      <!-- Filled by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_BOARD_ID = "default";
+    
+    function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && username === 'admin') {
+          document.getElementById('login').classList.remove('visible');
+          document.getElementById('admin-panel').classList.add('visible');
+          loadBoard(DEFAULT_BOARD_ID);
+        } else {
+          document.getElementById('login-error').textContent = 'Invalid login or not admin.';
+        }
+      });
+    }
+
+    function loadBoard(boardId = null) {
+      const id = boardId || document.getElementById('board-id').value || DEFAULT_BOARD_ID;
+
+      fetch(`/board/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          const board = document.getElementById('board');
+          board.innerHTML = '';
+          data.tiles.forEach(text => {
+            const div = document.createElement('div');
+            div.className = 'cell';
+            div.textContent = text;
+            board.appendChild(div);
+          });
+        })
+        .catch(err => {
+          alert('Failed to load board: ' + err);
+        });
+    }
+  </script>
+
+</body>
+</html>
